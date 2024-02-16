@@ -3,16 +3,13 @@ require('dotenv').config();
 const tmi = require('tmi.js');
 
 const commands = {
-    website: {
-        response: 'https://pollarbot.dev'
-    },
 }
 
 const client = new tmi.Client({
     connection: {
         reconnect: true
     },
-	channels: [ 'pollarbot' ],
+	channels: [ 'pollarbot', 'takkutv'],
     options: { debug: true },
     identity: {
 		username: process.env.TWITCH_BOT_USERNAME,
@@ -33,30 +30,34 @@ client.on('message', (channel, tags, message, self) => {
     const username = tags.username;
     const commandParts = message.trim().split(' ');
     const command = commandParts[0].toLowerCase();
+    const isModOrBroadcaster = tags.mod || tags['user-type'] === 'broadcaster';
 
-    // Start poll
-    if (command === '!startpoll' && commandParts.length > 1) {
-        isPollActive = true;
-        pollOptions = commandParts.slice(1);
-        votes = pollOptions.reduce((acc, option) => ({ ...acc, [option]: 0 }), {});
-        userVotes = {};
-        client.say(channel, `Poll has started! Options are: ${pollOptions.join(', ')}.`);
+    // Commands only allowed for moderators and the broadcaster
+    if (isModOrBroadcaster) {
+        // Start poll
+        if (command === '!startpoll' && commandParts.length > 1) {
+            isPollActive = true;
+            pollOptions = commandParts.slice(1);
+            votes = pollOptions.reduce((acc, option) => ({ ...acc, [option]: 0 }), {});
+            userVotes = {};
+            client.say(channel, `Poll has started! Options are: ${pollOptions.join(', ')}.`);
+        }
+        // Stop poll
+        else if ((command === '!stoppoll' || command === '!endpoll') && isPollActive) {
+            isPollActive = false;
+            const results = pollOptions.map(option => `${option}: ${votes[option]}`).join(', ');
+            client.say(channel, `Poll has ended! Results: ${results}`);
+            pollOptions = [];
+            votes = {};
+            userVotes = {};
+        }
     }
-    // Stop poll
-    else if ((command === '!stoppoll' || command === '!endpoll') && isPollActive) {
-        isPollActive = false;
-        const results = pollOptions.map(option => `${option}: ${votes[option]}`).join(', ');
-        client.say(channel, `Poll has ended! Results: ${results}`);
-        pollOptions = [];
-        votes = {};
-        userVotes = {};
-    }
-    // Collect votes
-    else if (isPollActive && pollOptions.includes(command)) {
-        if (!userVotes[username]) { // Check if the user has already voted
+
+    // Collect votes (allowed for all users)
+    if (isPollActive && pollOptions.includes(command) && !isModOrBroadcaster) {
+        if (!userVotes[username]) {
             votes[command]++;
-            userVotes[username] = true; // Mark user as having voted
-            // Provide real-time updates on vote counts
+            userVotes[username] = true;
             const currentResults = pollOptions.map(option => `${option}: ${votes[option]}`).join(', ');
             client.say(channel, `Current votes are: ${currentResults}`);
         }
