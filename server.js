@@ -30,7 +30,10 @@ client.on('message', (channel, tags, message, self) => {
     const username = tags.username;
     const commandParts = message.trim().split(' ');
     const command = commandParts[0].toLowerCase();
-    const isModOrBroadcaster = tags.mod || tags.broadcaster;
+    const badges = tags.badges || {};
+    const isBroadcaster = badges.broadcaster === '1';
+    const isMod = badges.moderator === '1';
+    const isModOrBroadcaster = isMod || isBroadcaster;
 
     // Commands only allowed for moderators and the broadcaster
     if (isModOrBroadcaster) {
