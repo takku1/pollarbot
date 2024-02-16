@@ -9,7 +9,7 @@ const client = new tmi.Client({
     connection: {
         reconnect: true
     },
-	channels: [ 'pollarbot', 'takkutv'],
+	channels: [ 'pollarbot', 'takkutv' ],
     options: { debug: true },
     identity: {
 		username: process.env.TWITCH_BOT_USERNAME,
@@ -30,7 +30,7 @@ client.on('message', (channel, tags, message, self) => {
     const username = tags.username;
     const commandParts = message.trim().split(' ');
     const command = commandParts[0].toLowerCase();
-    const isModOrBroadcaster = tags.mod || tags['user-type'] === 'broadcaster';
+    const isModOrBroadcaster = tags.mod || tags.broadcaster;
 
     // Commands only allowed for moderators and the broadcaster
     if (isModOrBroadcaster) {
